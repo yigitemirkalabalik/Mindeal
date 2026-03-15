@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mindeal — Duygu Analizi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:      #060d1a;
+  --panel:   #0c1628;
+  --panel2:  #111f35;
+  --border:  #1a2f4a;
+  --border2: #223a58;
+  --cyan:    #00d4f0;
+  --purple:  #8b5cf6;
+  --green:   #10d97a;
+  --text:    #c8dff0;
+  --muted:   #6a90b0;
+  --dim:     #2a4060;
+  --mono:    'Share Tech Mono',monospace;
+  --hud:     'Orbitron',sans-serif;
+}
+html,body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--mono);min-height:100vh;font-size:15px;
+  line-height:1.6;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 5%,  rgba(0,212,240,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 60% at 85% 95%, rgba(139,92,246,.07) 0%,transparent 60%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,212,240,.006) 3px,rgba(0,212,240,.006) 4px);
+}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:2.5rem 1.4rem 5rem}
+.col-main{display:flex;flex-direction:column;gap:1.1rem}
+
+/* ── HEADER ── */
+.header{text-align:center;margin-bottom:2rem}
+.logo{
+  font-family:var(--hud);font-size:2.8rem;font-weight:900;
+  letter-spacing:.18em;color:var(--cyan);
+  text-shadow:0 0 40px rgba(0,212,240,.4);
+}
+.logo em{color:var(--purple);font-style:normal;text-shadow:0 0 40px rgba(139,92,246,.5)}
+.hline{width:90px;height:1px;margin:.8rem auto;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--purple),transparent)}
+.logo-sub{font-size:.7rem;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
+
+/* ── PANEL ── */
+.panel{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:6px;padding:1.4rem;position:relative;overflow:hidden;
+}
+.panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,240,.25),rgba(139,92,246,.15),transparent);
+}
+.plabel{
+  font-size:.65rem;letter-spacing:.25em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:1rem;
+  display:flex;align-items:center;gap:10px;
+}
+.plabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.emo-chips{display:flex;gap:.45rem;flex-wrap:wrap}
+.emo-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.65rem;letter-spacing:.08em;padding:5px 11px;
+  border:1px solid currentColor;border-radius:20px;
+  text-transform:uppercase;font-family:var(--mono);
+  opacity:0.9;
+}
+.emo-chip .chip-icon{font-size:.75rem}
+.emo-chip .chip-pct{font-size:.6rem;opacity:.7}
+
+/* ── API KEY ── */
+.key-row{display:flex;gap:.6rem;align-items:stretch;flex-wrap:wrap}
+.key-input{
+  flex:1;min-width:200px;
+  background:rgba(0,212,240,.06);border:1px solid var(--border2);
+  color:var(--cyan);font-family:var(--mono);font-size:.85rem;
+  padding:.65rem 1rem;outline:none;border-radius:4px;letter-spacing:.04em;
+  transition:border-color .2s,box-shadow .2s;
+}
+.key-input:focus{border-color:rgba(0,212,240,.5);box-shadow:0 0 0 2px rgba(0,212,240,.08)}
+.key-input::placeholder{color:var(--dim)}
+.keybtn{
+  background:transparent;border:1px solid var(--border2);color:var(--muted);
+  font-family:var(--mono);font-size:.78rem;padding:.65rem 1rem;cursor:pointer;
+  border-radius:4px;white-space:nowrap;transition:all .2s;letter-spacing:.04em;
+}
+.keybtn:hover{border-color:var(--cyan);color:var(--cyan)}
+.keybtn.save{border-color:rgba(0,212,240,.3);color:var(--cyan)}
+.keybtn.save:hover{background:rgba(0,212,240,.08)}
+.key-hint{font-size:.68rem;color:var(--muted);margin-top:.6rem;line-height:1.7}
+.key-hint a{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,212,240,.3)}
+.key-hint a:hover{border-bottom-color:var(--cyan)}
+.key-hint strong{color:var(--text);font-weight:normal}
+.key-ok{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;color:var(--green);margin-top:.5rem}
+.key-ok::before{content:'◉';font-size:.6rem}
+
+/* ── TEXTAREA ── */
+.input-wrap{position:relative}
+textarea{
+  width:100%;background:rgba(0,212,240,.04);border:1px solid var(--border2);
+  border-radius:4px;outline:none;color:var(--text);
+  font-family:var(--mono);font-size:.92rem;line-height:1.85;
+  resize:vertical;min-height:140px;padding:1rem;
+  caret-color:var(--cyan);transition:border-color .2s;
+}
+textarea:focus{border-color:rgba(0,212,240,.4)}
+textarea::placeholder{color:var(--dim)}
+
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:.5rem;padding:.4rem .2rem 0;
+  border-top:1px solid var(--border);
+}
+.ccount{font-size:.68rem;color:var(--muted)}
+.status-indicator{
+  display:flex;align-items:center;gap:6px;
+  font-size:.68rem;color:var(--muted);
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;background:var(--dim);
+  transition:background .3s,box-shadow .3s;
+}
+.dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.dot.loading{background:var(--purple);animation:pulse .8s ease-in-out infinite alternate}
+.dot.done{background:var(--green);box-shadow:0 0 8px var(--green)}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+
+/* ── ERROR ── */
+.error{
+  display:none;color:#ff6070;font-size:.8rem;padding:.85rem 1rem;
+  border:1px solid rgba(255,60,80,.25);background:rgba(255,0,30,.05);
+  border-radius:4px;letter-spacing:.03em;
+}
+
+/* ── RESULTS ── */
+.results{display:none;flex-direction:column;gap:1.1rem}
+.results.on{display:flex}
+
+/* dominant card */
+.dom-card{
+  display:flex;align-items:center;gap:1.2rem;padding:1.1rem 1.2rem;
+  background:rgba(0,212,240,.04);border:1px solid rgba(0,212,240,.12);border-radius:5px;
+}
+.dom-icon{font-size:2.2rem;min-width:52px;text-align:center;line-height:1}
+.dom-lbl{font-size:.62rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem}
+.dom-name{font-family:var(--hud);font-size:1.25rem;font-weight:700;letter-spacing:.08em;color:var(--cyan)}
+.ibadge{
+  display:inline-block;font-size:.62rem;letter-spacing:.12em;
+  padding:3px 11px;border:1px solid currentColor;border-radius:3px;
+  text-transform:uppercase;margin-top:.3rem;
+}
+.dom-score{margin-left:auto;text-align:right;flex-shrink:0}
+.score-n{font-family:var(--hud);font-size:1.9rem;font-weight:700;color:var(--cyan);line-height:1}
+.score-l{font-size:.6rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-top:.2rem}
+
+/* bars */
+.bars{display:flex;flex-direction:column;gap:.75rem}
+.brow{display:grid;grid-template-columns:100px 1fr 50px;align-items:center;gap:.9rem}
+.bname{font-size:.72rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.btrack{height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.bfill{height:100%;width:0%;border-radius:3px;transition:width 1s cubic-bezier(.23,1,.32,1)}
+.bpct{font-size:.75rem;text-align:right;font-family:var(--hud);font-weight:700}
+
+/* grid 2 */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+
+/* insight */
+.insight{
+  background:rgba(139,92,246,.07);border-left:3px solid rgba(139,92,246,.35);
+  padding:.9rem 1.1rem;font-size:.85rem;line-height:1.85;color:var(--text);
+  border-radius:0 4px 4px 0;
+}
+
+/* tags */
+.tags{display:flex;gap:.5rem;flex-wrap:wrap}
+.tag{
+  font-size:.65rem;letter-spacing:.1em;padding:4px 12px;
+  border:1px solid var(--border2);color:var(--muted);text-transform:uppercase;
+  border-radius:3px;transition:all .2s;cursor:default;
+}
+.tag:hover{border-color:var(--cyan);color:var(--cyan)}
+/* history */
+.hlist{display:flex;flex-direction:column;gap:.5rem;max-height:220px;overflow-y:auto}
+.hlist::-webkit-scrollbar{width:3px}
+.hlist::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.hitem{
+  display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;
+  padding:.65rem .9rem;background:rgba(255,255,255,.02);
+  border-left:3px solid var(--border);border-radius:0 4px 4px 0;
+  cursor:pointer;transition:all .15s;
+}
+.hitem:hover{border-left-color:rgba(0,212,240,.4);background:rgba(0,212,240,.03)}
+.htext{font-size:.75rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hemot{font-family:var(--hud);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+.htime{font-size:.62rem;color:var(--muted);margin-top:2px;text-align:right}
+.hempty{font-size:.72rem;color:var(--dim);letter-spacing:.12em;text-align:center;padding:1.2rem 0}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel{animation:fadeUp .4s ease both}
+
+@media(max-width:600px){
+  .g2{grid-template-columns:1fr}
+  .brow{grid-template-columns:75px 1fr 44px}
+  .logo{font-size:2rem}
+  .dom-score{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="col-main">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">Mind<em>e</em>al</div>
+    <div class="hline"></div>
+    <div class="logo-sub">Pasif Duygu Durum Analizi · v2.1</div>
+  </header>
+
+  <!-- API KEY -->
+  <div class="panel" id="keyPanel">
+    <div class="plabel">Groq API Anahtarı</div>
+    <div class="key-row">
+      <input class="key-input" id="keyInput" type="password"
+        placeholder="gsk_..." autocomplete="off" spellcheck="false">
+      <button class="keybtn" id="keyToggle" onclick="toggleKey()">Göster</button>
+      <button class="keybtn save" onclick="saveKey()">Kaydet</button>
+    </div>
+    <div id="keyStatus"></div>
+    <div class="key-hint">
+      Anahtarın <strong>yalnızca tarayıcında</strong> saklanır, repoya veya sunucuya gitmez. ·
+      Almak için → <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>
+      (ücretsiz · kredi kartı yok · günde 1.000 istek)
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="panel">
+    <div class="plabel">Metin Girişi</div>
+    <div class="input-wrap">
+      <textarea id="inputText" maxlength="2000" rows="6"
+        placeholder="Düşüncelerini, hissettiklerini veya gününü buraya yaz...&#10;&#10;Yazmayı bırakınca analiz otomatik başlar."></textarea>
+    </div>
+    <div class="status-bar">
+      <span class="ccount"><span id="cc">0</span> / 2000 karakter</span>
+      <div class="status-indicator">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">bekleniyor</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error" id="err"></div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <div class="panel">
+      <div class="plabel">Baskın Duygu</div>
+      <div class="dom-card">
+        <div class="dom-icon" id="dIcon">○</div>
+        <div>
+          <div class="dom-lbl">Tespit Edildi</div>
+          <div class="dom-name" id="dName">—</div>
+          <span class="ibadge" id="dBadge">—</span>
+        </div>
+        <div class="dom-score">
+          <div class="score-n" id="dScore">—</div>
+          <div class="score-l">güven</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="plabel">Duygu Spektrumu</div>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <div class="plabel">AI Yorumu</div>
+        <div class="insight" id="insight">—</div>
+      </div>
+      <div class="panel">
+        <div class="plabel">Anahtar Kavramlar</div>
+        <div class="tags" id="tags"></div>
+        <div class="plabel" style="margin-top:1rem">Belirgin Duygular</div>
+        <div class="emo-chips" id="emoChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel">
+    <div class="plabel">Analiz Geçmişi <span id="hcnt" style="color:var(--dim)">0 kayıt</span></div>
+    <div class="hlist" id="hlist"><div class="hempty">// henüz analiz yok</div></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const EMO = {
+  neutral:      {tr:'Nötr',         c:'#6a90b0', i:'○'},
+  joy:          {tr:'Sevinç',        c:'#00d4f0', i:'◈'},
+  sadness:      {tr:'Üzüntü',       c:'#5b8fff', i:'◉'},
+  anger:        {tr:'Öfke',         c:'#ff5555', i:'◆'},
+  fear:         {tr:'Korku',        c:'#ff9a3c', i:'▲'},
+  anxiety:      {tr:'Kaygı',        c:'#ffd93d', i:'◇'},
+  calm:         {tr:'Huzur',        c:'#10d97a', i:'◎'},
+  love:         {tr:'Sevgi',        c:'#ff79c6', i:'◈'},
+  disgust:      {tr:'İğrenme',      c:'#bd93f9', i:'◐'},
+  surprise:     {tr:'Şaşkınlık',   c:'#00e87a', i:'◎'},
+  hope:         {tr:'Umut',         c:'#38bdf8', i:'◇'},
+  loneliness:   {tr:'Yalnızlık',   c:'#7b8fa6', i:'◉'},
+  gratitude:    {tr:'Minnettarlık', c:'#4ade80', i:'◈'},
+  guilt:        {tr:'Suçluluk',     c:'#a78bfa', i:'▲'},
+  excitement:   {tr:'Heyecan',      c:'#fb923c', i:'◆'},
+  frustration:  {tr:'Hayal Kırıklığı', c:'#f87171', i:'◇'},
+  pride:        {tr:'Gurur',        c:'#facc15', i:'◎'},
+  shame:        {tr:'Utanç',        c:'#94a3b8', i:'◐'},
+};
+const INT = {high:'Yüksek Yoğunluk', moderate:'Orta Yoğunluk', low:'Düşük Yoğunluk'};
+let hist = [];
+let debounceTimer = null;
+const DEBOUNCE_MS = 1600;
+
+// ── API ANAHTARI — localStorage'dan okunur ──
+function getApiKey(){ return localStorage.getItem('mindeal_key') || ''; }
+
+(function(){
+  const k = getApiKey();
+  if(k){ document.getElementById('keyInput').value = k; showKeyOk(); }
+})();
+
+function saveKey(){
+  const v = document.getElementById('keyInput').value.trim();
+  if(!v){ showErr('// API anahtarı boş olamaz.'); return; }
+  if(!v.startsWith('gsk_')){
+    showErr('// Geçersiz format. Groq anahtarı "gsk_..." ile başlamalı.'); return;
+  }
+  localStorage.setItem('mindeal_key', v);
+  document.getElementById('err').style.display = 'none';
+  showKeyOk();
+}
+
+function showKeyOk(){
+  document.getElementById('keyStatus').innerHTML =
+    '<div class="key-ok">Anahtar kaydedildi — yazmaya başla</div>';
+}
+
+function toggleKey(){
+  const inp = document.getElementById('keyInput');
+  const btn = document.getElementById('keyToggle');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Göster' : 'Gizle';
+}
+
+// ── INPUT & DEBOUNCE ──
+document.getElementById('inputText').addEventListener('input', function(){
+  const len = this.value.length;
+  document.getElementById('cc').textContent = len;
+  clearTimeout(debounceTimer);
+
+  if(len < 8){
+    setStatus('idle', 'bekleniyor');
+    return;
+  }
+
+  setStatus('active', 'analiz bekleniyor...');
+  debounceTimer = setTimeout(() => analyze(), DEBOUNCE_MS);
+});
+
+function setStatus(state, text){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'dot' + (state !== 'idle' ? ' ' + state : '');
+  txt.textContent = text;
+}
+
+// ── ANALYZE ──
+async function analyze(){
+  const text   = document.getElementById('inputText').value.trim();
+  const apiKey = getApiKey();
+  const err    = document.getElementById('err');
+  err.style.display = 'none';
+
+  if(!apiKey || apiKey === ''){
+    showErr('// API anahtarı girilmemiş. Sayfanın üstündeki alana Groq anahtarını gir ve Kaydet\'e bas.');
+    setStatus('idle','bekleniyor');
+    return;
+  }
+  if(text.length < 8) return;
+
+  setStatus('loading', 'analiz ediliyor...');
+
+  const prompt = `Aşağıdaki Türkçe metni dikkatli ve tarafsız şekilde analiz et. Metinde açık bir duygu yoksa "neutral" baskın olmalı.
+
+Metin:
+"""
+${text}
+"""
+
+Yalnızca şu JSON yapısını döndür. Başka hiçbir şey yazma, markdown kullanma:
+{"emotions":[{"id":"neutral","score":0.0},{"id":"joy","score":0.0},{"id":"sadness","score":0.0},{"id":"anger","score":0.0},{"id":"fear","score":0.0},{"id":"anxiety","score":0.0},{"id":"calm","score":0.0},{"id":"love","score":0.0},{"id":"disgust","score":0.0},{"id":"surprise","score":0.0},{"id":"hope","score":0.0},{"id":"loneliness","score":0.0},{"id":"gratitude","score":0.0},{"id":"guilt","score":0.0},{"id":"excitement","score":0.0},{"id":"frustration","score":0.0},{"id":"pride","score":0.0},{"id":"shame","score":0.0}],"dominant":"neutral","intensity":"low","insight":"Türkçe 1-2 cümle, empatik ve yargılamayan psikolojik yorum","keywords":["kelime1","kelime2"]}
+
+KRİTİK KURALLAR:
+- Nötr/bilgi içerikli metinlerde neutral skoru 0.7+ olmalı, duygusal skorlar düşük kalmalı
+- Açıkça pozitif ifade yoksa joy/love/excitement yüksek olmamalı
+- Sadece metinde gerçekten var olan duygulara yüksek skor ver
+- score: 0.0-1.0 · dominant: en yüksek skorun id'si · intensity: high(0.65+)/moderate(0.35-0.65)/low(0.35-)
+- keywords: metindeki duygusal/kavramsal anahtar kelimeler, max 4`;
+
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+apiKey,
+      },
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:700,
+        temperature:0.3,
+        messages:[
+          {role:'system', content:'Sen bir duygu analizi asistanısın. YALNIZCA geçerli JSON döndürürsün. JSON öncesinde veya sonrasında açıklama, not, yorum YAZMAZSIN. Sadece { ile başlayan ve } ile biten JSON.'},
+          {role:'user', content:prompt},
+        ],
+      }),
+    });
+
+    if(!res.ok){
+      const d = await res.json().catch(()=>({}));
+      if(res.status===401) throw new Error('Geçersiz API anahtarı — console.groq.com/keys adresinden kontrol et.');
+      if(res.status===429) throw new Error('Günlük istek limiti aşıldı — yarın tekrar dene veya biraz bekle.');
+      throw new Error(d.error?.message||`HTTP ${res.status}`);
+    }
+
+    const data   = await res.json();
+    let raw = data.choices[0]?.message?.content || '';
+    // JSON bloğunu regex ile çıkar — önce/sonra ne olursa olsun
+    const match = raw.match(/\{[\s\S]*\}/);
+    if(!match) throw new Error('Model JSON döndürmedi, tekrar dene.');
+    raw = match[0];
+    const result = JSON.parse(raw);
+    if(!result.emotions) throw new Error('Model yanıtı beklenmedik formatta.');
+
+    render(result);
+    addHist(result, text);
+    setStatus('done','analiz tamamlandı');
+    setTimeout(()=>setStatus('idle','bekleniyor'), 3000);
+
+  }catch(e){
+    showErr('// HATA: '+e.message);
+    setStatus('idle','bekleniyor');
+  }
+}
+
+// ── RENDER ──
+function render(r){
+  const dom = r.dominant||'neutral';
+  const d   = EMO[dom]||EMO.neutral;
+
+  document.getElementById('dIcon').textContent = d.i;
+  document.getElementById('dIcon').style.color = d.c;
+  document.getElementById('dName').textContent = d.tr;
+  document.getElementById('dName').style.color = d.c;
+
+  const badge = document.getElementById('dBadge');
+  badge.textContent      = INT[r.intensity]||r.intensity||'—';
+  badge.style.color      = d.c;
+  badge.style.borderColor= d.c;
+
+  const pct = Math.round((r.emotions?.find(e=>e.id===dom)?.score||0)*100);
+  const sc  = document.getElementById('dScore');
+  sc.textContent = pct+'%';
+  sc.style.color = d.c;
+
+  const sorted = [...(r.emotions||[])].sort((a,b)=>b.score-a.score);
+  document.getElementById('bars').innerHTML = sorted.map(e=>{
+    const info = EMO[e.id]||{tr:e.id,c:'#6a90b0'};
+    const p    = Math.round(e.score*100);
+    return `<div class="brow">
+      <div class="bname">${info.tr}</div>
+      <div class="btrack">
+        <div class="bfill" data-p="${p}"
+          style="background:linear-gradient(90deg,${info.c}30,${info.c}70);border-right:2px solid ${info.c}">
+        </div>
+      </div>
+      <div class="bpct" style="color:${info.c}">${p}%</div>
+    </div>`;
+  }).join('');
+
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.bfill[data-p]').forEach(b=>{b.style.width=b.dataset.p+'%'});
+  });
+
+  document.getElementById('insight').textContent = r.insight||'—';
+  document.getElementById('tags').innerHTML = (r.keywords||[])
+    .map(k=>`<span class="tag">${esc(k)}</span>`).join('');
+
+  // Belirgin duygular — score > 0.15 olanları göster, en fazla 5 tane
+  const notable = [...(r.emotions||[])]
+    .filter(e => e.score >= 0.15)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 5);
+
+  document.getElementById('emoChips').innerHTML = notable.length
+    ? notable.map(e => {
+        const info = EMO[e.id]||{tr:e.id, c:'#6a90b0', i:'○'};
+        const p = Math.round(e.score * 100);
+        return `<div class="emo-chip" style="color:${info.c};border-color:${info.c}44;background:${info.c}0d">
+          <span class="chip-icon">${info.i}</span>
+          <span>${info.tr}</span>
+          <span class="chip-pct">${p}%</span>
+        </div>`;
+      }).join('')
+    : `<div class="emo-chip" style="color:#6a90b0;border-color:#6a90b044;background:#6a90b00d">
+        <span class="chip-icon">○</span><span>Nötr</span><span class="chip-pct">—</span>
+       </div>`;
+
+  const res = document.getElementById('results');
+  if(!res.classList.contains('on')){
+    res.classList.add('on');
+    res.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+
+// ── HISTORY ──
+function addHist(r,text){
+  const d = EMO[r.dominant]||EMO.neutral;
+  hist.unshift({
+    text:text.substring(0,65)+(text.length>65?'...':''),
+    emot:d.tr, c:d.c, i:d.i,
+    time:new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),
+    r, full:text,
+  });
+  if(hist.length>15) hist.pop();
+  renderHist();
+}
+
+function renderHist(){
+  document.getElementById('hcnt').textContent = hist.length+' kayıt';
+  if(!hist.length){
+    document.getElementById('hlist').innerHTML='<div class="hempty">// henüz analiz yok</div>';
+    return;
+  }
+  document.getElementById('hlist').innerHTML = hist.map((h,i)=>`
+    <div class="hitem" onclick="loadHist(${i})">
+      <div>
+        <span style="color:${h.c};margin-right:7px">${h.i}</span>
+        <span class="htext">${esc(h.text)}</span>
+      </div>
+      <div>
+        <div class="hemot" style="color:${h.c}">${h.emot}</div>
+        <div class="htime">${h.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function loadHist(i){
+  const h=hist[i]; if(!h) return;
+  document.getElementById('inputText').value=h.full;
+  document.getElementById('cc').textContent=h.full.length;
+  render(h.r);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showErr(m){
+  const e=document.getElementById('err');
+  e.textContent=m; e.style.display='block';
+}
+function esc(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
